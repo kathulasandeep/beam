@@ -933,6 +933,8 @@ public class FileIO {
 
     abstract @Nullable PTransform<PCollection<UserT>, PCollectionView<Integer>> getSharding();
 
+    abstract @Nullable ShardingFunction<UserT, DestinationT> getShardingFunction();
+
     abstract boolean getIgnoreWindowing();
 
     abstract boolean getNoSpilling();
@@ -978,6 +980,9 @@ public class FileIO {
 
       abstract Builder<DestinationT, UserT> setSharding(
           PTransform<PCollection<UserT>, PCollectionView<Integer>> sharding);
+
+      abstract Builder<DestinationT, UserT> setShardingFunction(
+          ShardingFunction<UserT, DestinationT> shardingFunction);
 
       abstract Builder<DestinationT, UserT> setIgnoreWindowing(boolean ignoreWindowing);
 
@@ -1192,6 +1197,11 @@ public class FileIO {
       return toBuilder().setSharding(sharding).build();
     }
 
+    public Write<DestinationT, UserT> withShardingFunction(
+        ShardingFunction<UserT, DestinationT> shardingFunction) {
+      return toBuilder().setShardingFunction(shardingFunction).build();
+    }
+
     /**
      * Specifies to ignore windowing information in the input, and instead rewindow it to global
      * window with the default trigger.
@@ -1292,6 +1302,7 @@ public class FileIO {
       resolvedSpec.setCompression(getCompression());
       resolvedSpec.setNumShards(getNumShards());
       resolvedSpec.setSharding(getSharding());
+      resolvedSpec.setShardingFunction(getShardingFunction());
       resolvedSpec.setIgnoreWindowing(getIgnoreWindowing());
       resolvedSpec.setNoSpilling(getNoSpilling());
 
@@ -1305,6 +1316,9 @@ public class FileIO {
         writeFiles = writeFiles.withSharding(getSharding());
       } else {
         writeFiles = writeFiles.withRunnerDeterminedSharding();
+      }
+      if (getShardingFunction() != null) {
+        writeFiles = writeFiles.withShardingFunction(getShardingFunction());
       }
       if (!getIgnoreWindowing()) {
         writeFiles = writeFiles.withWindowedWrites();
