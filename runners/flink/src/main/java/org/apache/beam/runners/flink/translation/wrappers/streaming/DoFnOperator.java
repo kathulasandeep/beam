@@ -623,6 +623,8 @@ public class DoFnOperator<InputT, OutputT>
 
   public long getEffectiveInputWatermark() {
     // hold back by the pushed back values waiting for side inputs
+    LOG.info("Pushed back watermark is: "+pushedBackWatermark);
+    LOG.info("Current input watermark is: "+currentInputWatermark);
     return Math.min(pushedBackWatermark, currentInputWatermark);
   }
 

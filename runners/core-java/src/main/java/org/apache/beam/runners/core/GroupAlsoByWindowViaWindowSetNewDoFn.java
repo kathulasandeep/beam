@@ -30,6 +30,8 @@ import org.apache.beam.sdk.values.KV;
 import org.apache.beam.sdk.values.TupleTag;
 import org.apache.beam.sdk.values.WindowingStrategy;
 import org.joda.time.Instant;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A general {@link GroupAlsoByWindowsAggregators}. This delegates all of the logic to the {@link
@@ -39,6 +41,8 @@ import org.joda.time.Instant;
 public class GroupAlsoByWindowViaWindowSetNewDoFn<
         K, InputT, OutputT, W extends BoundedWindow, RinT extends KeyedWorkItem<K, InputT>>
     extends DoFn<RinT, KV<K, OutputT>> {
+  private static final Logger LOG =
+      LoggerFactory.getLogger(GroupAlsoByWindowViaWindowSetNewDoFn.class);
 
   private static final long serialVersionUID = 1L;
 
@@ -96,6 +100,8 @@ public class GroupAlsoByWindowViaWindowSetNewDoFn<
           Instant timestamp,
           Collection<? extends BoundedWindow> windows,
           PaneInfo pane) {
+        LOG.info("In outputWindowedValue of GroupAlsoByWindowViaWindowSetNewDoFn");
+        LOG.info("Timestamp in outputWindowedValue: " + timestamp);
         outputManager.output(mainTag, WindowedValue.of(output, timestamp, windows, pane));
       }
 
@@ -132,7 +138,7 @@ public class GroupAlsoByWindowViaWindowSetNewDoFn<
             sideInputReader,
             reduceFn,
             c.getPipelineOptions());
-
+    // LOG.info("In processElement of GroupAlsoByWindowViaWindowSetNewDoFn");
     reduceFnRunner.processElements(keyedWorkItem.elementsIterable());
     reduceFnRunner.onTimers(keyedWorkItem.timersIterable());
     reduceFnRunner.persist();

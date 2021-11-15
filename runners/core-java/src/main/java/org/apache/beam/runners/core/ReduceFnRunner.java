@@ -58,6 +58,8 @@ import org.apache.beam.vendor.guava.v26_0_jre.com.google.common.collect.Immutabl
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.joda.time.Duration;
 import org.joda.time.Instant;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Manages the execution of a {@link ReduceFn} after a {@link GroupByKeyOnly} has partitioned the
@@ -89,6 +91,7 @@ import org.joda.time.Instant;
   "keyfor"
 }) // TODO(https://issues.apache.org/jira/browse/BEAM-10402)
 public class ReduceFnRunner<K, InputT, OutputT, W extends BoundedWindow> {
+  private static final Logger LOG = LoggerFactory.getLogger(ReduceFnRunner.class);
 
   /**
    * The {@link ReduceFnRunner} depends on most aspects of the {@link WindowingStrategy}.
@@ -382,6 +385,7 @@ public class ReduceFnRunner<K, InputT, OutputT, W extends BoundedWindow> {
   }
 
   public void persist() {
+    LOG.info("Active windows class name is: " + activeWindows.getClass().getName());
     activeWindows.persist();
   }
 
@@ -680,6 +684,7 @@ public class ReduceFnRunner<K, InputT, OutputT, W extends BoundedWindow> {
   }
 
   public void onTimers(Iterable<TimerData> timers) throws Exception {
+    LOG.info("In onTimers of ReduceFnRunner");
     if (!timers.iterator().hasNext()) {
       return;
     }
@@ -689,6 +694,16 @@ public class ReduceFnRunner<K, InputT, OutputT, W extends BoundedWindow> {
     Map<BoundedWindow, WindowActivation> windowActivations = new HashMap();
 
     for (TimerData timer : timers) {
+      timer.getDomain()
+      LOG.info("Timer is: " + timer.toString());
+      LOG.info("Current input watermark time is: " + timerInternals.currentInputWatermarkTime());
+      LOG.info("Current output watermark time is: " + timerInternals.currentOutputWatermarkTime());
+
+      LOG.info(
+          "Current synchronized processing time is: "
+              + timerInternals.currentSynchronizedProcessingTime());
+      LOG.info("Current processing time is: " + timerInternals.currentProcessingTime());
+
       checkArgument(
           timer.getNamespace() instanceof WindowNamespace,
           "Expected timer to be in WindowNamespace, but was in %s",
