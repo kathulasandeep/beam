@@ -27,7 +27,6 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Stream;
 import javax.annotation.Nonnull;
-
 import org.apache.beam.runners.core.StateInternals;
 import org.apache.beam.runners.core.StateNamespace;
 import org.apache.beam.runners.core.StateNamespaces;
@@ -1069,7 +1068,7 @@ public class FlinkStateInternals<K> implements StateInternals {
     @Override
     public void put(KeyT key, ValueT value) {
       try {
-        //Log.info("Thread name is: "+Thread.currentThread().getName());
+        // Log.info("Thread name is: "+Thread.currentThread().getName());
         flinkStateBackend
             .getPartitionedState(
                 namespace.stringKey(), StringSerializer.INSTANCE, flinkStateDescriptor)

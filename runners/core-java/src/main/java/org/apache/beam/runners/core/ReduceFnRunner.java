@@ -694,7 +694,6 @@ public class ReduceFnRunner<K, InputT, OutputT, W extends BoundedWindow> {
     Map<BoundedWindow, WindowActivation> windowActivations = new HashMap();
 
     for (TimerData timer : timers) {
-      timer.getDomain()
       LOG.info("Timer is: " + timer.toString());
       LOG.info("Current input watermark time is: " + timerInternals.currentInputWatermarkTime());
       LOG.info("Current output watermark time is: " + timerInternals.currentOutputWatermarkTime());
