@@ -286,14 +286,17 @@ public class UnboundedSourceWrapper<OutputT, CheckpointMarkT extends UnboundedSo
       boolean hadData = false;
       while (isRunning && !maxWatermarkReached) {
         UnboundedSource.UnboundedReader<OutputT> reader = localReaders.get(currentReader);
-
+        LOG.info("Before entering synchronized block for getting checkpoint lock");
         synchronized (ctx.getCheckpointLock()) {
+          LOG.info("Entered synchronized block for getting checkpoint lock");
           if (readerInvoker.invokeAdvance(reader)) {
             emitElement(ctx, reader);
             hadData = true;
           }
+          LOG.info("Exiting synchronized block for getting checkpoint lock");
         }
-
+        LOG.info("Sleeping for 1 milli sec");
+        Thread.sleep(1);
         currentReader = (currentReader + 1) % numReaders;
         if (currentReader == 0 && !hadData) {
           // We have visited all the readers and none had data
@@ -452,9 +455,16 @@ public class UnboundedSourceWrapper<OutputT, CheckpointMarkT extends UnboundedSo
 
   @Override
   public void onProcessingTime(long timestamp) {
+    Thread.dumpStack();
+    LOG.info(
+        "onProcessingTime function of UnboundedSourceWrapper class with timestamp: "
+            + Instant.ofEpochMilli(timestamp));
     if (this.isRunning) {
+      LOG.info("Entered if loop of onProcessingTime function of UnboundedSourceWrapper class");
       synchronized (context.getCheckpointLock()) {
         // find minimum watermark over all localReaders
+        LOG.info(
+            "Entered synchronized block of onProcessingTime function of UnboundedSourceWrapper class");
         long watermarkMillis = Long.MAX_VALUE;
         for (UnboundedSource.UnboundedReader<OutputT> reader : localReaders) {
           Instant watermark = reader.getWatermark();
@@ -462,6 +472,9 @@ public class UnboundedSourceWrapper<OutputT, CheckpointMarkT extends UnboundedSo
             watermarkMillis = Math.min(watermark.getMillis(), watermarkMillis);
           }
         }
+        LOG.info(
+            "Emmitting watermark value from UnboundedSourceWrapper class: "
+                + Instant.ofEpochMilli(watermarkMillis));
         context.emitWatermark(new Watermark(watermarkMillis));
 
         if (watermarkMillis < BoundedWindow.TIMESTAMP_MAX_VALUE.getMillis()) {
@@ -478,14 +491,21 @@ public class UnboundedSourceWrapper<OutputT, CheckpointMarkT extends UnboundedSo
   private void setNextWatermarkTimer(StreamingRuntimeContext runtime) {
     if (this.isRunning) {
       long watermarkInterval = runtime.getExecutionConfig().getAutoWatermarkInterval();
+      LOG.info("Watermark interval is : " + watermarkInterval);
       synchronized (context.getCheckpointLock()) {
+        LOG.info("Entered synchronized block of setNextWatermarkTimer function");
         long currentProcessingTime = runtime.getProcessingTimeService().getCurrentProcessingTime();
+        LOG.info("Current processing time is: " + Instant.ofEpochMilli(currentProcessingTime));
         if (currentProcessingTime < Long.MAX_VALUE) {
           long nextTriggerTime = currentProcessingTime + watermarkInterval;
           if (nextTriggerTime < currentProcessingTime) {
             // overflow, just trigger once for the max timestamp
             nextTriggerTime = Long.MAX_VALUE;
+            LOG.info(
+                "Setting next trigger time to max value of long: "
+                    + Instant.ofEpochMilli(nextTriggerTime));
           }
+          LOG.info("Setting next trigger time to : " + Instant.ofEpochMilli(nextTriggerTime));
           runtime.getProcessingTimeService().registerTimer(nextTriggerTime, this);
         }
       }
