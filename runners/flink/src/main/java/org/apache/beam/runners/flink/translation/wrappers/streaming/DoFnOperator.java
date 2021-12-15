@@ -623,8 +623,6 @@ public class DoFnOperator<InputT, OutputT>
 
   public long getEffectiveInputWatermark() {
     // hold back by the pushed back values waiting for side inputs
-    // LOG.info("Pushed back watermark is: " + pushedBackWatermark);
-    // LOG.info("Current input watermark is: " + currentInputWatermark);
     return Math.min(pushedBackWatermark, currentInputWatermark);
   }
 
@@ -741,25 +739,19 @@ public class DoFnOperator<InputT, OutputT>
       // before receiving any main-input data
       emitAllPushedBackData();
     }
-    LOG.info("In Process watermark1 function");
     currentInputWatermark = mark.getTimestamp();
     processInputWatermark(true);
   }
 
   private void processInputWatermark(boolean advanceInputWatermark) throws Exception {
     long inputWatermarkHold = applyInputWatermarkHold(getEffectiveInputWatermark());
-    LOG.info("Input watermark hold is: " + Instant.ofEpochMilli(inputWatermarkHold));
     if (keyCoder != null && advanceInputWatermark) {
-      LOG.info("Advancing watermark to: " + Instant.ofEpochMilli(inputWatermarkHold));
       timeServiceManagerCompat.advanceWatermark(new Watermark(inputWatermarkHold));
     }
 
     long potentialOutputWatermark =
         applyOutputWatermarkHold(
             currentOutputWatermark, computeOutputWatermark(inputWatermarkHold));
-    LOG.info("Potential watermark hold is: " + Instant.ofEpochMilli(potentialOutputWatermark));
-
-    // Input watermark hold is same as Potential watermark hold same as watermark emitted
 
     maybeEmitWatermark(potentialOutputWatermark);
   }
@@ -801,10 +793,9 @@ public class DoFnOperator<InputT, OutputT>
       // Must invoke finishBatch before emit the +Inf watermark otherwise there are some late
       // events.
       if (watermark >= BoundedWindow.TIMESTAMP_MAX_VALUE.getMillis()) {
-        LOG.info("Called invoke finish bundle"); // Not much useful
         invokeFinishBundle();
       }
-      LOG.info("Emitting watermark {}", Instant.ofEpochMilli(watermark));
+      LOG.debug("Emitting watermark {}", watermark);
       currentOutputWatermark = watermark;
       output.emitWatermark(new Watermark(watermark));
 
@@ -812,7 +803,6 @@ public class DoFnOperator<InputT, OutputT>
       if (keyedStateInternals != null
           && currentOutputWatermark
               > adjustTimestampForFlink(GlobalWindow.INSTANCE.maxTimestamp().getMillis())) {
-        LOG.info("Called clear global state"); // Never called
         keyedStateInternals.clearGlobalState();
       }
     }
@@ -1007,7 +997,6 @@ public class DoFnOperator<InputT, OutputT>
   // allow overriding this in ExecutableStageDoFnOperator to set the key context
   protected void fireTimerInternal(ByteBuffer key, TimerData timerData) {
     long oldHold = keyCoder != null ? keyedStateInternals.minWatermarkHoldMs() : -1L;
-    // TODO: This function is never called as log in fireTimer is never called
     fireTimer(timerData);
     emitWatermarkIfHoldChanged(oldHold);
   }
@@ -1015,11 +1004,8 @@ public class DoFnOperator<InputT, OutputT>
   void emitWatermarkIfHoldChanged(long currentWatermarkHold) {
     if (keyCoder != null) {
       long newWatermarkHold = keyedStateInternals.minWatermarkHoldMs();
-      LOG.info("New watermark hold is: " + Instant.ofEpochMilli(newWatermarkHold));
-      LOG.info("Current watermark hold is: " + Instant.ofEpochMilli(currentWatermarkHold));
       if (newWatermarkHold > currentWatermarkHold) {
         try {
-          LOG.info("Called process input watermark function with advance input watermark as false");
           processInputWatermark(false);
         } catch (Exception ex) {
           // should not happen
@@ -1031,13 +1017,11 @@ public class DoFnOperator<InputT, OutputT>
 
   // allow overriding this in WindowDoFnOperator
   protected void fireTimer(TimerData timerData) {
-
-    // TODO: The below log is never called in IKS.
-    LOG.info(
-        "Firing timer: {} at {} with output time {}",
-        timerData.getTimerId(),
-        timerData.getTimestamp().getMillis(),
-        timerData.getOutputTimestamp().getMillis());
+    LOG.debug(
+            "Firing timer: {} at {} with output time {}",
+            timerData.getTimerId(),
+            timerData.getTimestamp().getMillis(),
+            timerData.getOutputTimestamp().getMillis());
     StateNamespace namespace = timerData.getNamespace();
     // This is a user timer, so namespace must be WindowNamespace
     checkArgument(namespace instanceof WindowNamespace);
@@ -1528,10 +1512,8 @@ public class DoFnOperator<InputT, OutputT>
                 timer.getNamespace()));
         if (timer.getDomain() == TimeDomain.EVENT_TIME
             || StateAndTimerBundleCheckpointHandler.isSdfTimer(timer.getTimerId())) {
-          LOG.info("Its an event time timer in onFiredOrDeletedTimer method");
           if (timerUsesOutputTimestamp(timer)) {
             keyedStateInternals.removeWatermarkHoldUsage(timer.getOutputTimestamp());
-            LOG.info("Event time timer uses outputTimestamp");
           }
         }
       } catch (Exception e) {

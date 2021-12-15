@@ -1068,7 +1068,6 @@ public class FlinkStateInternals<K> implements StateInternals {
     @Override
     public void put(KeyT key, ValueT value) {
       try {
-        // Log.info("Thread name is: "+Thread.currentThread().getName());
         flinkStateBackend
             .getPartitionedState(
                 namespace.stringKey(), StringSerializer.INSTANCE, flinkStateDescriptor)

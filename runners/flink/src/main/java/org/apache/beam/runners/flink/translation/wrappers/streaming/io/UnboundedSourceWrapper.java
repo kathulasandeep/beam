@@ -461,8 +461,6 @@ public class UnboundedSourceWrapper<OutputT, CheckpointMarkT extends UnboundedSo
 
   @Override
   public void onProcessingTime(long timestamp) {
-    Thread.dumpStack();
-    Thread.currentThread().setPriority(7);
     LOG.debug(
         "onProcessingTime function of UnboundedSourceWrapper class with timestamp: "
             + Instant.ofEpochMilli(timestamp));
