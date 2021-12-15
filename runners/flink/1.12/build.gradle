@@ -15,7 +15,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-apply plugin: 'maven'
 def basePath = '..'
 /* All properties required for loading the Flink build script */
 project.ext {
