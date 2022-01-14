@@ -1018,10 +1018,10 @@ public class DoFnOperator<InputT, OutputT>
   // allow overriding this in WindowDoFnOperator
   protected void fireTimer(TimerData timerData) {
     LOG.debug(
-            "Firing timer: {} at {} with output time {}",
-            timerData.getTimerId(),
-            timerData.getTimestamp().getMillis(),
-            timerData.getOutputTimestamp().getMillis());
+        "Firing timer: {} at {} with output time {}",
+        timerData.getTimerId(),
+        timerData.getTimestamp().getMillis(),
+        timerData.getOutputTimestamp().getMillis());
     StateNamespace namespace = timerData.getNamespace();
     // This is a user timer, so namespace must be WindowNamespace
     checkArgument(namespace instanceof WindowNamespace);

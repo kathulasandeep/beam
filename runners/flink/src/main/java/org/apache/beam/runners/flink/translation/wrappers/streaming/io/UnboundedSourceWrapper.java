@@ -143,7 +143,7 @@ public class UnboundedSourceWrapper<OutputT, CheckpointMarkT extends UnboundedSo
   /** Metrics container which will be reported as Flink accumulators at the end of the job. */
   private transient FlinkMetricContainer metricContainer;
 
-  private transient long lastTimeYieldedForWatermark;
+  // private transient long lastTimeYield = 0;
 
   @SuppressWarnings("unchecked")
   public UnboundedSourceWrapper(
@@ -297,11 +297,13 @@ public class UnboundedSourceWrapper<OutputT, CheckpointMarkT extends UnboundedSo
           }
           LOG.debug("Exiting synchronized block for getting checkpoint lock");
         }
-        long now = System.currentTimeMillis();
-        if(now - lastTimeYieldedForWatermark > 20000){
-          lastTimeYieldedForWatermark = now;
-          Thread.yield();
-        }
+
+        //        long now = System.currentTimeMillis();
+        //        if (now - lastTimeYield > 30000) {
+        //          lastTimeYield = now;
+        //          LOG.debug("Thread yielded for watermarks");
+        //          Thread.yield();
+        //        }
 
         currentReader = (currentReader + 1) % numReaders;
         if (currentReader == 0 && !hadData) {
@@ -461,6 +463,7 @@ public class UnboundedSourceWrapper<OutputT, CheckpointMarkT extends UnboundedSo
 
   @Override
   public void onProcessingTime(long timestamp) {
+    Thread.currentThread().setPriority(7);
     LOG.debug(
         "onProcessingTime function of UnboundedSourceWrapper class with timestamp: "
             + Instant.ofEpochMilli(timestamp));
